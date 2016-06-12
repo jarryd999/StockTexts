@@ -1,14 +1,9 @@
+import requests, json, re
 # import flask and twilio
 from flask import Flask, request
-import requests, json, re
-
-
-# used to send messages
 from twilio.rest import TwilioRestClient 
 
-# import urllib2  # the lib that handles the url stuff
-
-#
+# Environment Variables
 DEBUG = True
 
 # setup twilio login and client for outgoing messages
@@ -19,7 +14,6 @@ client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
 
 app = Flask(__name__)
 
-# data = urllib2.urlopen('http://download.finance.yahoo.com/d/quotes.csv?s=AAPL+GOOG+MSFT') # it's a file like object and works just like a file
 # for line in data: # files are iterable
 #     print line
 
@@ -33,44 +27,81 @@ def parseText():
 	text_contents = request.values.get('Body', None).split(",")
 
 	output = []
+	tickerSymbolList = []
+	moreInfo = False
 
 	for message in text_contents:
-		print(message)
 		# capitolize ticker symbol
 		tickerSymbol = message.upper()
-		# get rid of any characters not a letter or digit
-		tickerSymbol = re.sub(r'[\W_]+', '', tickerSymbol)
-		
-		# hit yfinance to get stock info
-		stockInfo = getStockInfo(tickerSymbol)
 
-		# parse the data from yfinance
-		stockInfo = parseStockInfo(stockInfo)
-		
-		# add the parsed data into the output list
-		output.append(stockInfo)
+		# get rid of any characters not a letter or digit
+		allSymbols = re.sub(r'[\W_]+', '', tickerSymbol)
+
+		#check for the detail option and set the flag if present
+		if tickerSymbol == 'DETAIL':
+			moreInfo = True
+			continue
+			
+		tickerSymbolList.append(tickerSymbol)
+	# hit yfinance to get stock info
+	stockInfo = getStockInfo(tickerSymbolList)
+
+
+	# parse the data from yfinance
+	parsedStockInfo = parseStockInfo(stockInfo)
 
 	# create the text message and send it
-	outputText = parseOutput(output)
+	outputText = parseOutput(parsedStockInfo)
 	sendText(outputText)
 
-	# text the response back
+	# # text the response back
 	return json.dumps(output)
 
-def getStockInfo(tickerSymbol):
-	YFinanceURL = 'http://finance.yahoo.com/webservice/v1/symbols/' + tickerSymbol + '/quote?format=json&view=detail'
+
+
+#########################################################################################
+# Function:			getStockInfo(tickerSymbol)											#
+#																						#
+# Description:		Hit the finance API once, requesting all companies' stock info		#
+#																						#
+# Input:	(List)	Contains all the stock ticker symbols								#
+# Output:	(Dict)	Contains requested stock information for all companies				#
+#########################################################################################
+def getStockInfo(tickerSymbols):
+	#build a string for the URL query of all the ticker symbols
+	PARAMS = ""
+	print tickerSymbols
+	for symbol in tickerSymbols:
+		PARAMS += symbol + ','
+	#trim the last comma
+	PARAMS = PARAMS[:-1]
+
+	YFinanceURL = 'http://finance.yahoo.com/webservice/v1/symbols/' + PARAMS + '/quote?format=json&view=detail'
 	response = requests.get(YFinanceURL)
 
 	# get the response JSON 
 	response = response.json()
-	# print(response)
+
 	# step down to the array of different companies,
 	# filtering any useless higher level information
 	response = response[unicode("list")][unicode("resources")]
 
 	return response
 
+
+
+#########################################################################################
+# Function:			parseStockInfo(stockInfo)											#
+#																						#
+# Description:		Create a string representation of the stock information				#
+#					to send as text 													#
+#																						#
+# Input:	(Dict)	Contains data from the finance API									#
+# Output:	(Dict)	Contains only requested stock information 							#
+#########################################################################################
 def parseStockInfo(stockInfo):
+	output = []
+
 	# loop through all the stocks in the response and extract relevant data
 	for stock in stockInfo:
 		stock = stock[unicode("resource")][unicode("fields")]
@@ -88,17 +119,19 @@ def parseStockInfo(stockInfo):
 		# if statements for options (subscribe, more info, etc)
 
 		stockInfo = {'symbol': name, 'price': price} 
-		# return the parsed data
-		return stockInfo
+		output.append(stockInfo)
+	
+	return output
 
-#***
-# Function:			parseOutput(output)
-#
-# Description:		Create a string representation of the stock information
-#					to send as text
-#
-# Input:	(Dict)		Dictionary containing company names and their stock information
-# Output:	(String)	A String representation to send to text
+#########################################################################################
+# Function:				parseOutput(output)												#
+#																						#
+# Description:			Create a string representation of the stock information			#
+#						to send as text 												#
+#																						#
+# Input:	(Dict)		Contains company names and their stock information				#
+# Output:	(String)	A String representation to send to text 						#
+#########################################################################################
 def parseOutput(output):
 	text = ""
 	for company in output:
@@ -109,6 +142,17 @@ def parseOutput(output):
 	text = text[:-1]
 	return text
 
+
+#########################################################################################
+# Function:					sendText(output)											#
+#																						#
+# Description:				Make a call to the twilio API to reply via SMS with the 	#
+#							requested stock information									#
+#																						#
+# Input:	(String)		Dictionary containing company names and their stock 		#
+#							information 												#
+# Output:	(None)																		#
+#########################################################################################
 def sendText(output):
 	message = client.messages.create(
 	    to="+19149076903", 
