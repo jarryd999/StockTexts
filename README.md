@@ -1,10 +1,10 @@
 # StockTexts
 Python/Flask app to get stock information via text
 
-#Description
+##Description
 This program will take in a text with one or more comma seperated stock ticker symbols (ie. googl,appl,etc) and send a text message back with the stock current stock data.  If the keyword `detail` is provided in the same format as a ticker symbol, the program will spit back more detailed stock data.
 
-#Installation & Deployment
+##Installation & Deployment
 ###Container
 Currently, the container is not open to the public until I can figure out how to handle credentials.
 
