@@ -24,9 +24,9 @@ STOCK_DETAILS = {
 	"year_low" : 		 {	"showUser" : False,	"displayName": "Year Low"		}
 }
 
-# setup twilio login and client for outgoing messages
-ACCOUNT_SID = "AC47dfcf040faf1fd544217eb5791310aa" 
-AUTH_TOKEN = "08de93e91162fe799b6f8a7ec157b8b5" 
+# Twilio Variables
+ACCOUNT_SID = 
+AUTH_TOKEN = 
 client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN) 
 
 app = Flask(__name__)
