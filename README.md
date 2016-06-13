@@ -10,7 +10,7 @@ Currently, the container is not open to the public until I can figure out how to
 
 
 ###Manual
-run `git clone https://github.com/jarryd999/StockTexts'.  Enter your twilio credentials in the Twilio Variables section at the top.  After that, you will want to run the app ('python app.py') on a server of your choice, exposing port 5001.
+run `git clone https://github.com/jarryd999/StockTexts'.  Enter your twilio credentials in the TwilioCredentials.py file.  After that, you will want to run the app ('python app.py') on a server of your choice, exposing port 5001.
 
 
 
