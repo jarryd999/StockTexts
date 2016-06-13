@@ -8,7 +8,7 @@ DEBUG = True
 
 STOCK_DETAILS = { 
 	"change" : 			 {	"showUser" : False,	"displayName": "Change"			},
-	"chg_percent" : 	 {	"showUser" : True, "displayName": ""				},
+	"chg_percent" : 	 {	"showUser" : True, "displayName": "Change%"			},
 	"day_high" : 		 {	"showUser" : True, "displayName": "High"			},
 	"day_low" : 		 {	"showUser" : False,	"displayName": "Low"			},
 	"issuer_name" : 	 {	"showUser" : False,	"displayName": ""				},
@@ -165,13 +165,15 @@ def parseStockInfo(stockInfo, moreInfo):
 def parseOutput(output, moreInfo):
 	text = ""
 	for company in output:
-		text += company["symbol"] + " " + company["price"]
+		print company
+		text += company["symbol"] + " " + company["price"] + "("
+		if company["Change%"] > 0:
+			text += "+"
+		chng = float(company["Change%"])
+		chng = round(chng, 2)
+		text += str(chng) + "%) "
 
-		if moreInfo:
-			for detail in company:
-				if detail == "symbol" or detail == "price":
-					continue
-				text += detail + ": " + company[detail] + ","
+		text += "High: " + formatCurrency(float(company["High"])) + ", Year High: " + formatCurrency(float(company["Year High"]))
 		text += "; "
 
 	# trim off the trailing spaces and semicolon
