@@ -2,7 +2,7 @@ import requests, json, re
 # import flask and twilio
 from flask import Flask, request
 from twilio.rest import TwilioRestClient 
-
+from TwilioCredentials import ACCOUNT_SID, AUTH_TOKEN
 # Environment Variables
 DEBUG = True
 
@@ -24,9 +24,7 @@ STOCK_DETAILS = {
 	"year_low" : 		 {	"showUser" : False,	"displayName": "Year Low"		}
 }
 
-# Twilio Variables
-ACCOUNT_SID = 
-AUTH_TOKEN = 
+
 client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN) 
 
 app = Flask(__name__)
@@ -68,7 +66,7 @@ def parseText():
 
 	# create the text message and send it
 	outputText = parseOutput(parsedStockInfo)
-	sendText(outputText)
+	sendText(outputText,from_number)
 
 	# # text the response back
 	return json.dumps(output)
@@ -184,11 +182,12 @@ def parseOutput(parsedStockInfo):
 #							requested stock information									#
 #																						#
 # Input:	(String)		The message to send back to the user						#
+#			(String)		The number to text back
 # Output:	(None)																		#
 #########################################################################################
-def sendText(message):
+def sendText(message, from_number):
 	message = client.messages.create(
-	    to="+19149076903", 
+	    to=from_number, 
 	    from_="+19142144724", 
 	    body=message,
 	   	sid=ACCOUNT_SID,
