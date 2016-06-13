@@ -27,14 +27,9 @@ STOCK_DETAILS = {
 # setup twilio login and client for outgoing messages
 ACCOUNT_SID = "AC47dfcf040faf1fd544217eb5791310aa" 
 AUTH_TOKEN = "08de93e91162fe799b6f8a7ec157b8b5" 
-
 client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN) 
 
 app = Flask(__name__)
-
-# for line in data: # files are iterable
-#     print line
-
 
 
 @app.route("/", methods=['POST'])
@@ -72,7 +67,7 @@ def parseText():
 	parsedStockInfo = parseStockInfo(stockInfo, moreInfo)
 
 	# create the text message and send it
-	outputText = parseOutput(parsedStockInfo, moreInfo)
+	outputText = parseOutput(parsedStockInfo)
 	sendText(outputText)
 
 	# # text the response back
@@ -86,6 +81,7 @@ def parseText():
 # Description:		Hit the finance API once, requesting all companies' stock info		#
 #																						#
 # Input:	(List)	Contains all the stock ticker symbols								#
+#			(Bool)	Whether or not to fetch stock details
 # Output:	(Dict)	Contains requested stock information for all companies				#
 #########################################################################################
 def getStockInfo(tickerSymbols, moreInfo):
@@ -119,11 +115,11 @@ def getStockInfo(tickerSymbols, moreInfo):
 #########################################################################################
 # Function:			parseStockInfo(stockInfo)											#
 #																						#
-# Description:		Create a string representation of the stock information				#
-#					to send as text 													#
+# Description:		Create a dict containing relevant stock info						#
 #																						#
 # Input:	(Dict)	Contains data from the finance API									#
-# Output:	(Dict)	Contains only requested stock information 							#
+#			(Bool)	Whether or not to display detailed stock info 						#
+# Output:	(Dict)	Contains relevant stock info 										#
 #########################################################################################
 def parseStockInfo(stockInfo, moreInfo):
 	output = []
@@ -157,15 +153,14 @@ def parseStockInfo(stockInfo, moreInfo):
 # Function:				parseOutput(output)												#
 #																						#
 # Description:			Create a string representation of the stock information			#
-#						to send as text 												#
+#						to send as text to the user										#
 #																						#
-# Input:	(Dict)		Contains company names and their stock information				#
+# Input:	(Dict)		Contains parsed stock information								#
 # Output:	(String)	A String representation to send to text 						#
 #########################################################################################
-def parseOutput(output, moreInfo):
+def parseOutput(parsedStockInfo):
 	text = ""
-	for company in output:
-		print company
+	for company in parsedStockInfo:
 		text += company["symbol"] + " " + company["price"] + "("
 		if company["Change%"] > 0:
 			text += "+"
@@ -183,27 +178,34 @@ def parseOutput(output, moreInfo):
 
 
 #########################################################################################
-# Function:					sendText(output)											#
+# Function:					sendText(message)											#
 #																						#
 # Description:				Make a call to the twilio API to reply via SMS with the 	#
 #							requested stock information									#
 #																						#
-# Input:	(String)		Dictionary containing company names and their stock 		#
-#							information 												#
+# Input:	(String)		The message to send back to the user						#
 # Output:	(None)																		#
 #########################################################################################
-def sendText(output):
+def sendText(message):
 	message = client.messages.create(
 	    to="+19149076903", 
 	    from_="+19142144724", 
-	    body=output,
+	    body=message,
 	   	sid=ACCOUNT_SID,
 
     )
 
 
-def formatCurrency(inString):
-	return '${:,.2f}'.format(inString)
+#########################################################################################
+# Function:					formatCurrency(num)											#
+#																						#
+# Description:				Convert a value to look like $ddd,ddd.cc					#
+#																						#
+# Input:	(String/Float)	Value to convert to currency format 				 		#
+# Output:	(String)		Value converted to currency																		#
+#########################################################################################
+def formatCurrency(num):
+	return '${:,.2f}'.format(num)
 
 
 
