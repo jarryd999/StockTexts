@@ -3,9 +3,9 @@ from app import app
 
 class TestStockTexts(unittest.TestCase):
 	def test_parseText(self):
-		print "\n"
+		print "\n\n\n\n"
 		self.test_app = app.test_client()
-		response = self.test_app.post('/', data={'From': '9149076903', 'Body':'GOOGL,BRK.A'})
+		response = self.test_app.post('/', data={'From': '9149076903', 'Body':'GOOGL,BRK.A, detail'})
 		self.assertEquals(response.status, "200 OK")
 
 		print(response.get_data())

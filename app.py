@@ -6,6 +6,24 @@ from twilio.rest import TwilioRestClient
 # Environment Variables
 DEBUG = True
 
+STOCK_DETAILS = { 
+	"change" : 			 {	"showUser" : False,	"displayName": "Change"			},
+	"chg_percent" : 	 {	"showUser" : True, "displayName": ""				},
+	"day_high" : 		 {	"showUser" : True, "displayName": "High"			},
+	"day_low" : 		 {	"showUser" : False,	"displayName": "Low"			},
+	"issuer_name" : 	 {	"showUser" : False,	"displayName": ""				},
+	"issuer_name_lang" : {	"showUser" : False,	"displayName": ""				},
+	"name" : 			 {	"showUser" : False,	"displayName": "Name"			},
+	"price" : 			 {	"showUser" : False,	"displayName": "Price"			},
+	"symbol" : 			 {	"showUser" : False,	"displayName": "Symbol"			},
+	"ts" : 				 {	"showUser" : False,	"displayName": "Recent as of"	},
+	"type" : 			 {	"showUser" : False,	"displayName": "Type"			},
+	"utctime" : 		 {	"showUser" : False,	"displayName": ""				},
+	"volume" : 			 {	"showUser" : False,	"displayName": "Volume"			},
+	"year_high" : 		 {	"showUser" : True,	"displayName": "Year High"		},
+	"year_low" : 		 {	"showUser" : False,	"displayName": "Year Low"		}
+}
+
 # setup twilio login and client for outgoing messages
 ACCOUNT_SID = "AC47dfcf040faf1fd544217eb5791310aa" 
 AUTH_TOKEN = "08de93e91162fe799b6f8a7ec157b8b5" 
@@ -32,26 +50,29 @@ def parseText():
 
 	for message in text_contents:
 		# capitolize ticker symbol
-		tickerSymbol = message.upper()
+		tickerSymbol = message.upper().strip()
+
+
 
 		# get rid of any characters not a letter or digit
-		allSymbols = re.sub(r'[\W_]+', '', tickerSymbol)
+		tickerSymbol = re.sub(r'[\W_]+', '', tickerSymbol)
 
 		#check for the detail option and set the flag if present
 		if tickerSymbol == 'DETAIL':
 			moreInfo = True
 			continue
-			
+		# otherwise add the ticker symbol to the list
 		tickerSymbolList.append(tickerSymbol)
+	
 	# hit yfinance to get stock info
-	stockInfo = getStockInfo(tickerSymbolList)
+	stockInfo = getStockInfo(tickerSymbolList, moreInfo)
 
 
 	# parse the data from yfinance
-	parsedStockInfo = parseStockInfo(stockInfo)
+	parsedStockInfo = parseStockInfo(stockInfo, moreInfo)
 
 	# create the text message and send it
-	outputText = parseOutput(parsedStockInfo)
+	outputText = parseOutput(parsedStockInfo, moreInfo)
 	sendText(outputText)
 
 	# # text the response back
@@ -67,16 +88,21 @@ def parseText():
 # Input:	(List)	Contains all the stock ticker symbols								#
 # Output:	(Dict)	Contains requested stock information for all companies				#
 #########################################################################################
-def getStockInfo(tickerSymbols):
+def getStockInfo(tickerSymbols, moreInfo):
 	#build a string for the URL query of all the ticker symbols
 	PARAMS = ""
-	print tickerSymbols
 	for symbol in tickerSymbols:
 		PARAMS += symbol + ','
 	#trim the last comma
 	PARAMS = PARAMS[:-1]
 
-	YFinanceURL = 'http://finance.yahoo.com/webservice/v1/symbols/' + PARAMS + '/quote?format=json&view=detail'
+	YFinanceURL = 'http://finance.yahoo.com/webservice/v1/symbols/' + PARAMS + '/quote?format=json'
+
+	# add parameter for detailed view
+	if moreInfo:
+		YFinanceURL += '&view=detail'
+
+
 	response = requests.get(YFinanceURL)
 
 	# get the response JSON 
@@ -99,26 +125,30 @@ def getStockInfo(tickerSymbols):
 # Input:	(Dict)	Contains data from the finance API									#
 # Output:	(Dict)	Contains only requested stock information 							#
 #########################################################################################
-def parseStockInfo(stockInfo):
+def parseStockInfo(stockInfo, moreInfo):
 	output = []
 
 	# loop through all the stocks in the response and extract relevant data
 	for stock in stockInfo:
 		stock = stock[unicode("resource")][unicode("fields")]
 
-		# change = stock["change"]
+		# grab name and price, format price
+		name = stock[unicode("symbol")]
 		price = stock[unicode("price")]
 		price = float(price)
-
 		# format to currency
-		price = '${:,.2f}'.format(price)
-
-
-		name = stock[unicode("symbol")]
-
-		# if statements for options (subscribe, more info, etc)
-
+		price = formatCurrency(price)
 		stockInfo = {'symbol': name, 'price': price} 
+
+
+		# If more info requested, include other details about stock
+		if moreInfo:
+			for detail in STOCK_DETAILS:
+				displayName = STOCK_DETAILS[detail]['displayName']
+				if STOCK_DETAILS[detail]['showUser']:
+					stockInfo[displayName] = stock[unicode(detail)]
+
+
 		output.append(stockInfo)
 	
 	return output
@@ -132,10 +162,17 @@ def parseStockInfo(stockInfo):
 # Input:	(Dict)		Contains company names and their stock information				#
 # Output:	(String)	A String representation to send to text 						#
 #########################################################################################
-def parseOutput(output):
+def parseOutput(output, moreInfo):
 	text = ""
 	for company in output:
-		text += company["symbol"] + " " + company["price"] + ";  "
+		text += company["symbol"] + " " + company["price"]
+
+		if moreInfo:
+			for detail in company:
+				if detail == "symbol" or detail == "price":
+					continue
+				text += detail + ": " + company[detail] + ","
+		text += "; "
 
 	# trim off the trailing spaces and semicolon
 	text = text.strip()
@@ -161,6 +198,10 @@ def sendText(output):
 	   	sid=ACCOUNT_SID,
 
     )
+
+
+def formatCurrency(inString):
+	return '${:,.2f}'.format(inString)
 
 
 
