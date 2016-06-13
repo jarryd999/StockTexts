@@ -160,7 +160,7 @@ def parseOutput(parsedStockInfo):
 	text = ""
 	for company in parsedStockInfo:
 		text += company["symbol"] + " " + company["price"] + "("
-		if company["Change%"] > 0:
+		if company["Change%"][0] != unicode("-"):
 			text += "+"
 		chng = float(company["Change%"])
 		chng = round(chng, 2)
