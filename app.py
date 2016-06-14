@@ -65,7 +65,7 @@ def parseText():
 	parsedStockInfo = parseStockInfo(stockInfo, moreInfo)
 
 	# create the text message and send it
-	outputText = parseOutput(parsedStockInfo)
+	outputText = parseOutput(parsedStockInfo, moreInfo)
 	sendText(outputText,from_number)
 
 	# # text the response back
@@ -156,18 +156,21 @@ def parseStockInfo(stockInfo, moreInfo):
 # Input:	(Dict)		Contains parsed stock information								#
 # Output:	(String)	A String representation to send to text 						#
 #########################################################################################
-def parseOutput(parsedStockInfo):
+def parseOutput(parsedStockInfo, moreInfo):
 	text = ""
 	for company in parsedStockInfo:
-		text += company["symbol"] + " " + company["price"] + "("
-		if company["Change%"][0] != unicode("-"):
-			text += "+"
-		chng = float(company["Change%"])
-		chng = round(chng, 2)
-		text += str(chng) + "%) "
+		text += company["symbol"] + " " + company["price"] 
+		if moreInfo:
+			text += "("
+			if company["Change%"][0] != unicode("-"):
+				text += "+"
+			chng = float(company["Change%"])
+			chng = round(chng, 2)
+			text += str(chng) + "%) "
 
-		text += "High: " + formatCurrency(float(company["High"])) + ", Year High: " + formatCurrency(float(company["Year High"]))
+			text += "High: " + formatCurrency(float(company["High"])) + ", Year High: " + formatCurrency(float(company["Year High"]))
 		text += "; "
+
 
 	# trim off the trailing spaces and semicolon
 	text = text.strip()
